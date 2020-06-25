@@ -1,19 +1,21 @@
 const mongoose = require('mongoose');
 
-var CourseSchema = new mongoose.Schema({
-    courseName:{
+var ClassDetails = new mongoose.Schema({
+
+    className:{
         type: String,
-        required: "Required"
+        required: true
     },
-    courseId: {
+    section: {
         type: String
     },
-    courseDuration: {
+    subject: {
         type: String
     },
-    courseFee: {
+    room: {
         type: String
     }
 })
 
-mongoose.model("Course", CourseSchema)
+const Model = mongoose.model("ClassDetails", ClassDetails)
+ Model.createCollection();

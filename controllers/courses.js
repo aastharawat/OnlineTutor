@@ -2,16 +2,30 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const router = express.Router();
-const CourseModel = mongoose.model("Course")
+const ClassDetails = mongoose.model("ClassDetails")
 
-router.get("/list", (req, res) => {
-
-    CourseModel.find((err, docs) =>{
-        if(!err){
-            console.log(docs);
-            res.send("Reuest send to the database")
-        }
+router.post('/classes', async (req,res) => {
+    const classDetail = new ClassDetails({
+        className: req.body.className,
+        section: req.body.section,
+        subject: req.body.subject,
+        room: req.body.room
     })
+    const result = classDetail.save()
+    result.then(result=>{res.json(result)} ); 
+});
+
+router.get('/list/:id', async (req, res) => {  
+    const response = await ClassDetails.findById(req.params.id);
+    res.json( response);
+    console.log("aastha",response)
+});
+
+router.get('/list', async (req, res) => {  
+    const response = await ClassDetails.find();
+    res.json(response);
 });
 
 module.exports = router; 
+
+    
