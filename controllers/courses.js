@@ -11,14 +11,13 @@ router.post('/classes', async (req,res) => {
         subject: req.body.subject,
         room: req.body.room
     })
-    const result = classDetail.save()
-    result.then(result=>{res.json(result)} ); 
+    const result = await classDetail.save()
+    res.json(result);
 });
 
 router.get('/list/:id', async (req, res) => {  
     const response = await ClassDetails.findById(req.params.id);
     res.json( response);
-    console.log("aastha",response)
 });
 
 router.get('/list', async (req, res) => {  

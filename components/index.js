@@ -1,7 +1,7 @@
 
 const mongoose = require('mongoose');
  
-mongoose.connect("mongodb://localhost:27017/DemoData", {useNewUrlParser: true,  useUnifiedTopology: true }, (error)=>{
+mongoose.connect("mongodb://localhost:27017/demoData", {useNewUrlParser: true,  useUnifiedTopology: true }, (error)=>{
     if(!error){
         console.log("Connection success")
     }
@@ -11,3 +11,4 @@ mongoose.connect("mongodb://localhost:27017/DemoData", {useNewUrlParser: true,  
 })
 
 const Course = require("./DataModel");
+const User = require("./UserDetails");

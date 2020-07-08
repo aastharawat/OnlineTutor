@@ -4,7 +4,7 @@ var ClassDetails = new mongoose.Schema({
 
     className:{
         type: String,
-        required: true
+        required: true,
     },
     section: {
         type: String
