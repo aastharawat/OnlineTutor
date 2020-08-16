@@ -1,18 +1,27 @@
+require("./components");
+const mongoose = require("mongoose");
 
-
-require('./components')
-const express = require('express');
+const express = require("express");
 const app = express();
+const cookieParser = require("cookie-parser");
+const CourseController = require("./controllers/classes");
+const UserController = require("./controllers/users");
+
+// *******GENERAL*******
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-const CourseController = require("./controllers/courses");
-const UserController = require("./controllers/users")
 
+var cors = require("cors");
+const passport = require("passport");
+app.use(cors());
 
-var cors = require('cors')
-app.use(cors())
+// *******PASSPORT AUTHENTICATION*********
+require("./controllers/passport");
+app.use(passport.initialize());
 
-app.use("/course", CourseController)
-app.use("/user", UserController)
+// ******* ROUTES ********
+app.use("/course", CourseController);
+app.use("/user", UserController);
 
 app.listen(8000);
