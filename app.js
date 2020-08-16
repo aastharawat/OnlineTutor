@@ -21,7 +21,6 @@ require("./controllers/passport");
 app.use(passport.initialize());
 
 // ******* ROUTES ********
-app.use("/course", CourseController);
 app.use("/user", UserController);
 
 app.listen(8000);

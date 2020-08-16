@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const router = express.Router();
 const UserDetails = mongoose.model("UserDetails");
 const passport = require("passport");
-
+const ClassDetails = mongoose.model("ClassDetails");
 const bcrypt = require("bcrypt");
 
 //register new user
@@ -81,6 +81,72 @@ router.get(
   (req, res, next) => {
     const userName = req.user;
     res.status(200).json({ isAuthenticated: true, user: { userName } });
+  }
+);
+
+router.get(
+  "/classList",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    UserDetails.findById({ _id: req.user._id })
+      .populate("classes")
+      .exec((err, document) => {
+        if (err)
+          res.status(500).json({
+            message: { msgBody: "Something went wrong!", msgError: true },
+          });
+        else
+          res
+            .status(200)
+            .json({ classes: document.classes, authenticated: true });
+      });
+  }
+);
+
+// router.post(
+//   "courses/class",
+//   passport.authenticate("jwt", { session: false }),
+//   async (req, res) => {
+//     const classDetail = new ClassDetails({
+//       className: req.body.className,
+//       section: req.body.section,
+//       subject: req.body.subject,
+//       room: req.body.room,
+//     });
+//     const result = await classDetail.save();
+//     res.json(result);
+//   }
+// );
+
+router.post(
+  "/class",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const classDetail = new ClassDetails({
+      className: req.body.className,
+      section: req.body.section,
+      subject: req.body.subject,
+      room: req.body.room,
+    });
+    classDetail.save((err) => {
+      if (err)
+        res.status(500).json({
+          message: { msgBody: "Something went wrong!", msgError: true },
+        });
+      else {
+        req.user.classes.push(classDetail);
+        req.user.save((err) => {
+          if (err)
+            res.status(500).json({
+              message: { msgBody: "Something went wrong!", msgError: true },
+            });
+          else
+            res.status(200).json({
+              message: { msgBody: "Successfully created!", msgError: false },
+            });
+        });
+      }
+    });
   }
 );
 
