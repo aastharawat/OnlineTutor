@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const auth = require("./passport");
 const User = require("../components/UserDetails");
+const ClassDetails = require("../components/ClassDetails");
 
 router.post("/register", async (req, res) => {
   try {
@@ -100,16 +101,8 @@ router.post("/tokenIsValid", async (req, res) => {
   }
 });
 
-// router.get("/", auth, async (req, res) => {
-//   const user = await User.findById(req.user);
-//   res.json({
-//     email: user.email,
-//     id: user._id,
-//   });
-// });
-
 router.get("/classList", auth, (req, res) => {
-  User.findById({ _id: req.user })
+  User.findById({ _id: req.user._id })
     .populate("classes")
     .exec((err, document) => {
       if (err)

@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
-
-const auth = (req, res, next) => {
+const User = require("../components/UserDetails");
+const auth = async (req, res, next) => {
   try {
     const token = req.header("authorization");
     if (!token)
@@ -14,7 +14,9 @@ const auth = (req, res, next) => {
         .status(401)
         .json({ msg: "Token verification failed, authorization denied." });
 
-    req.user = verified.id;
+    await User.findById(verified.id).then((res) => {
+      req.user = res;
+    });
     next();
   } catch (err) {
     res.status(500).json({ error: err.message });
