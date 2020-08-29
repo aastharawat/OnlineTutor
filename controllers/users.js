@@ -1,153 +1,144 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
-const router = express.Router();
-const UserDetails = mongoose.model("UserDetails");
-const passport = require("passport");
-const ClassDetails = mongoose.model("ClassDetails");
+const router = require("express").Router();
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const auth = require("./passport");
+const User = require("../components/UserDetails");
+const ClassDetails = require("../components/ClassDetails");
 
-//register new user
 router.post("/register", async (req, res) => {
   try {
-    const { email, password, passwordCheck, userName, classes } = req.body;
-    const existingUSer = await UserDetails.findOne({ email: email });
+    let { email, password, passwordCheck, displayName } = req.body;
 
-    if (existingUSer)
-      return res
-        .status(400)
-        .json({ msg: "An account with this email exists." });
+    // validate
+
     if (!email || !password || !passwordCheck)
-      return res.status(400).json({ msg: "Not all fields entered" });
-
+      return res.status(400).json({ msg: "Not all fields have been entered." });
     if (password.length < 5)
       return res
         .status(400)
-        .json({ msg: "The password should have atleast 5 characters" });
-
+        .json({ msg: "The password needs to be at least 5 characters long." });
     if (password !== passwordCheck)
-      return res.status(400).json({ msg: "Password donot match" });
+      return res
+        .status(400)
+        .json({ msg: "Enter the same password twice for verification." });
 
-    if (!userName) userName = email;
-    const pwd = await bcrypt.genSalt();
-    const passwordHash = await bcrypt.hash(password, pwd);
+    const existingUser = await User.findOne({ email: email });
+    if (existingUser)
+      return res
+        .status(400)
+        .json({ msg: "An account with this email already exists." });
 
-    const userDetails = new UserDetails({
+    if (!displayName) displayName = email;
+
+    const salt = await bcrypt.genSalt();
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const newUser = new User({
       email,
       password: passwordHash,
-      userName,
-      classes,
+      displayName,
     });
-    const savedUser = await userDetails.save();
+    const savedUser = await newUser.save();
     res.json(savedUser);
   } catch (err) {
-    res.json(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-//login
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-router.post(
-  "/login",
-  passport.authenticate("local", { session: false }),
-  (req, res) => {
-    var token = jwt.sign(
-      { email: req.body.email },
-      process.env.ACCESS_TOKEN_SECRET
-    );
-    res.cookie("access_token", token, { httpOnly: true, sameSite: true });
-    res
-      .status(200)
-      .json({ isAuthenticated: true, user: { email: req.body.email } });
+    // validate
+    if (!email || !password)
+      return res.status(400).json({ msg: "Not all fields have been entered." });
+
+    const user = await User.findOne({ email: email });
+    if (!user)
+      return res
+        .status(400)
+        .json({ msg: "No account with this email has been registered." });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ msg: "Invalid credentials." });
+
+    const token = jwt.sign({ id: user._id }, process.env.ACCESS_TOKEN_SECRET);
+    res.json({
+      token,
+      isAuthenticated: true,
+      user: {
+        id: user._id,
+        emil: user.email,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-);
+});
 
-router.get(
-  "/logout",
-  passport.authenticate("jwt", { session: false }),
-
-  (req, res, next) => {
-    res.clearCookie("access_token");
-    const userName = req.user;
-    res.status(200).json({ isAuthenticated: false, user: { userName } });
-
-    next();
+router.delete("/delete", auth, async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.user);
+    res.json(deletedUser);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-);
+});
 
-router.get(
-  "/authenticated",
-  passport.authenticate("jwt", { session: false }),
-  (req, res, next) => {
-    const userName = req.user;
-    res.status(200).json({ isAuthenticated: true, user: { userName } });
+router.post("/tokenIsValid", async (req, res) => {
+  try {
+    const token = req.header("authorization");
+    if (!token) return res.json(false);
+
+    const verified = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    if (!verified) return res.json(false);
+
+    const user = await User.findById(verified.id);
+    if (!user) return res.json(false);
+    return res.json({ isAuthenticated: true, email: user.email, id: user._id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-);
+});
 
-router.get(
-  "/classList",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    UserDetails.findById({ _id: req.user._id })
-      .populate("classes")
-      .exec((err, document) => {
+router.get("/classList", auth, (req, res) => {
+  User.findById({ _id: req.user._id })
+    .populate("classes")
+    .exec((err, document) => {
+      if (err)
+        res.status(500).json({
+          message: { msgBody: "Something went wrong!", msgError: true },
+        });
+      else res.status(200).json({ classes: document.classes });
+    });
+});
+
+router.post("/class", auth, (req, res) => {
+  const classDetail = new ClassDetails({
+    className: req.body.className,
+    section: req.body.section,
+    subject: req.body.subject,
+    room: req.body.room,
+  });
+  classDetail.save((err) => {
+    if (err)
+      res.status(500).json({
+        message: { msgBody: "Something went wrong!", msgError: true },
+      });
+    else {
+      req.user.classes.push(classDetail);
+      req.user.save((err) => {
         if (err)
           res.status(500).json({
             message: { msgBody: "Something went wrong!", msgError: true },
           });
         else
-          res
-            .status(200)
-            .json({ classes: document.classes, authenticated: true });
+          res.status(200).json({
+            message: { msgBody: "Successfully created!", msgError: false },
+          });
       });
-  }
-);
-
-// router.post(
-//   "courses/class",
-//   passport.authenticate("jwt", { session: false }),
-//   async (req, res) => {
-//     const classDetail = new ClassDetails({
-//       className: req.body.className,
-//       section: req.body.section,
-//       subject: req.body.subject,
-//       room: req.body.room,
-//     });
-//     const result = await classDetail.save();
-//     res.json(result);
-//   }
-// );
-
-router.post(
-  "/class",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    const classDetail = new ClassDetails({
-      className: req.body.className,
-      section: req.body.section,
-      subject: req.body.subject,
-      room: req.body.room,
-    });
-    classDetail.save((err) => {
-      if (err)
-        res.status(500).json({
-          message: { msgBody: "Something went wrong!", msgError: true },
-        });
-      else {
-        req.user.classes.push(classDetail);
-        req.user.save((err) => {
-          if (err)
-            res.status(500).json({
-              message: { msgBody: "Something went wrong!", msgError: true },
-            });
-          else
-            res.status(200).json({
-              message: { msgBody: "Successfully created!", msgError: false },
-            });
-        });
-      }
-    });
-  }
-);
+    }
+  });
+});
 
 module.exports = router;
