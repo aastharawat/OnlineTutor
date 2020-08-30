@@ -113,6 +113,25 @@ router.get("/classList", auth, (req, res) => {
     });
 });
 
+router.get("/classById", auth, (req, res) => {
+  User.findById({ _id: req.user._id })
+    .populate("classes")
+    .exec((err, userClass) => {
+      if (err)
+        res.status(500).json({
+          message: { msgBody: "Something went wrong!", msgError: true },
+        });
+      else {
+        var classes = userClass.classes.filter(function (item) {
+          return item._id == req.header("id");
+        });
+        res.status(200).json({
+          classes,
+        });
+      }
+    });
+});
+
 router.post("/class", auth, (req, res) => {
   const classDetail = new ClassDetails({
     className: req.body.className,
