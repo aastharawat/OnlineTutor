@@ -68,7 +68,8 @@ router.post("/login", async (req, res) => {
       isAuthenticated: true,
       user: {
         id: user._id,
-        emil: user.email,
+        email: user.email,
+        username: user.username,
       },
     });
   } catch (err) {
