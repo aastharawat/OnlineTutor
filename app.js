@@ -10,7 +10,7 @@ const UserController = require("./controllers/users");
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(express.static(__dirname))
 const passport = require("passport");
 var cors = require("cors");
 app.use(cors({ origin: "*" }));
