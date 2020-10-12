@@ -21,5 +21,8 @@ app.use(passport.initialize());
 // ******* ROUTES ********
 app.use("/user", UserController);
 
+app.get("/", (req, res) => {
+    res.status(200).send("Hello");
+  });
 const PORT = process.env.port || 8000;
 app.listen(PORT);
