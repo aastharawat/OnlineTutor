@@ -6,6 +6,8 @@ const app = express();
 const cookieParser = require("cookie-parser");
 const UserController = require("./controllers/users");
 
+const port = process.env.PORT || 8000;
+
 // *******GENERAL*******
 app.use(express.json());
 app.use(cookieParser());
